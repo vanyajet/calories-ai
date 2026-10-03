@@ -1,0 +1,36 @@
+export const Palette = {
+  light: {
+    background: '#F6F7F9',
+    card: '#FFFFFF',
+    cardAlt: '#EEF0F3',
+    text: '#111418',
+    textSecondary: '#5E6672',
+    border: '#E2E5EA',
+    accent: '#16A34A',
+    accentText: '#FFFFFF',
+    danger: '#DC2626',
+    warning: '#D97706',
+    protein: '#2563EB',
+    fat: '#D97706',
+    carbs: '#9333EA',
+    ringTrack: '#E5E8EC',
+  },
+  dark: {
+    background: '#0B0D10',
+    card: '#16191E',
+    cardAlt: '#1F2329',
+    text: '#F2F4F7',
+    textSecondary: '#9AA3AF',
+    border: '#272C33',
+    accent: '#22C55E',
+    accentText: '#06210F',
+    danger: '#F87171',
+    warning: '#FBBF24',
+    protein: '#60A5FA',
+    fat: '#FBBF24',
+    carbs: '#C084FC',
+    ringTrack: '#262B32',
+  },
+};
+
+export type Colors = typeof Palette.light;
