@@ -62,7 +62,7 @@ export default function ReviewScreen() {
 
   const save = async () => {
     const items = state.items.filter((i) => i.name.trim() || i.total.kcal > 0);
-    if (items.length === 0) return;
+    if (items.length === 0) return Alert.alert(t.errors.emptyEntry);
     const title = state.title.trim() || items.map((i) => i.name.trim()).filter(Boolean).join(', ') || '—';
     const input = {
       day: state.day,

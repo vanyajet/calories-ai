@@ -28,12 +28,12 @@ function shift(period: Period, anchor: string, dir: 1 | -1): string {
 
 export default function StatsScreen() {
   const db = useSQLiteContext();
-  const { t, colors, locale, settings, dataVersion } = useApp();
+  const { t, colors, locale, profile: effectiveProfile, dataVersion } = useApp();
   const { width } = useWindowDimensions();
   const [period, setPeriod] = useState<Period>('week');
   const [anchor, setAnchor] = useState(todayKey);
   const [rows, setRows] = useState<DaySummary[]>([]);
-  const profile = settings.profile!;
+  const profile = effectiveProfile!;
 
   const days = periodDays(period, anchor);
   const from = days[0];

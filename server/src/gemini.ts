@@ -163,7 +163,6 @@ async function callOnce(input: AnalyzeInput, apiKey: string, model: string): Pro
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema: RESPONSE_SCHEMA,
-        temperature: 0.2,
       },
     }),
   });

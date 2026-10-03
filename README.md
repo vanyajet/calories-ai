@@ -34,6 +34,8 @@ npm install
 APK для Android (ставится по QR-коду из EAS):
 
 ```bash
+npx eas-cli@latest login
+npx eas-cli@latest init
 npx eas-cli@latest env:create --environment preview --name EXPO_PUBLIC_PROXY_URL --value https://...
 npx eas-cli@latest env:create --environment preview --name EXPO_PUBLIC_APP_SECRET --value ...
 npx eas-cli@latest build -p android --profile preview

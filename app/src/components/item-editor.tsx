@@ -6,6 +6,8 @@ import { useApp } from '@/lib/app-context';
 import { normalizeItem } from '@/lib/nutrition';
 import type { FoodItem, Nutrients } from '@/lib/types';
 
+const r1 = (n: number) => Math.round(n * 10) / 10;
+
 type Mode = 'per100' | 'total';
 
 export function ItemEditor({ item, onChange, onRemove }: { item: FoodItem; onChange: (i: FoodItem) => void; onRemove?: () => void }) {
@@ -24,7 +26,7 @@ export function ItemEditor({ item, onChange, onRemove }: { item: FoodItem; onCha
         normalizeItem({
           ...item,
           grams,
-          per100: { kcal: Math.round(tot.kcal * k), protein: tot.protein * k, fat: tot.fat * k, carbs: tot.carbs * k },
+          per100: { kcal: Math.round(tot.kcal * k), protein: r1(tot.protein * k), fat: r1(tot.fat * k), carbs: r1(tot.carbs * k) },
         }),
       );
     }

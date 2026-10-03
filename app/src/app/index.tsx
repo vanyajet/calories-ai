@@ -18,7 +18,7 @@ import type { DayLog, Entry } from "@/lib/types";
 
 export default function DayScreen() {
   const db = useSQLiteContext();
-  const { t, colors, locale, settings, dataVersion, notifyDataChanged } =
+  const { t, colors, locale, profile: effectiveProfile, dataVersion, notifyDataChanged } =
     useApp();
   const insets = useSafeAreaInsets();
   const [day, setDay] = useState(todayKey);
@@ -43,7 +43,7 @@ export default function DayScreen() {
     };
   }, [db, day, dataVersion]);
 
-  const profile = settings.profile!;
+  const profile = effectiveProfile!;
   const target = dayTarget(profile, log.activeKcal);
   const eaten = sum(entries.map((e) => itemsTotal(e.items)));
 

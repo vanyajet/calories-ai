@@ -13,7 +13,7 @@ export async function storePhoto(sourceUri: string): Promise<string> {
   const dir = new Directory(Paths.document, 'photos');
   dir.create({ idempotent: true });
   const dest = new File(dir, `${Date.now()}-${Math.round(Math.random() * 1e6)}.jpg`);
-  new File(saved.uri).copy(dest);
+  await new File(saved.uri).copy(dest);
   return dest.uri;
 }
 

@@ -3,13 +3,15 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 
-import { loadSettings, saveSettings } from './db';
+import { latestWeight, loadSettings, saveSettings } from './db';
 import { LOCALES, STRINGS, type Strings } from './i18n';
 import { Palette, type Colors } from './theme';
-import type { Settings } from './types';
+import type { Profile, Settings } from './types';
 
 type AppContextValue = {
   settings: Settings;
+  /** Profile with the most recent logged weight, used for all calorie math. */
+  profile: Profile | null;
   update: (patch: Partial<Settings>) => Promise<void>;
   t: Strings;
   locale: string;
@@ -31,6 +33,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
+  const [loggedWeight, setLoggedWeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    latestWeight(db).then(setLoggedWeight);
+  }, [db, dataVersion]);
 
   useEffect(() => {
     loadSettings(db).then((s) =>
@@ -53,8 +60,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue | null>(() => {
     if (!settings) return null;
     const isDark = settings.theme === 'system' ? system === 'dark' : settings.theme === 'dark';
+    const profile = settings.profile && { ...settings.profile, weightKg: loggedWeight ?? settings.profile.weightKg };
     return {
       settings,
+      profile,
       update,
       t: STRINGS[settings.lang],
       locale: LOCALES[settings.lang],
@@ -63,7 +72,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dataVersion,
       notifyDataChanged,
     };
-  }, [settings, system, update, dataVersion, notifyDataChanged]);
+  }, [settings, system, update, dataVersion, notifyDataChanged, loggedWeight]);
 
   if (!value) return null;
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
