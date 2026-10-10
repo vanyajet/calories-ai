@@ -6,7 +6,7 @@ services:
     env_file: .env
     restart: unless-stopped
     ports:
-      - "8787:8787"
+      - "${HOST_PORT:-8787}:8787"
 
   # HTTPS via Let's Encrypt. Needs a domain whose A record points at this server
   # and ports 80/443 open. Start with: docker compose --profile https up -d
