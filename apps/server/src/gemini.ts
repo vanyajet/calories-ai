@@ -1,3 +1,4 @@
+import type { AnalyzedItem, AnalyzeResponse, HandSize, Lang } from '@calories/shared';
 import { z } from 'zod';
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -5,8 +6,8 @@ const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 export type AnalyzeInput = {
   imageBase64?: string;
   text?: string;
-  lang: 'ru' | 'en';
-  hand?: { lengthCm: number; widthCm: number };
+  lang: Lang;
+  hand?: HandSize;
 };
 
 // Ranges come from the model; the midpoint is taken here in code so the
@@ -117,27 +118,14 @@ function buildPrompt(input: AnalyzeInput): string {
   return lines.join('\n');
 }
 
-export type AnalyzedItem = {
-  name: string;
-  grams: number;
-  kcalPer100: number;
-  proteinPer100: number;
-  fatPer100: number;
-  carbsPer100: number;
-  macrosEstimated: boolean;
-  confidence: 'high' | 'medium' | 'low';
-};
-
-export type AnalyzeResult = { isFood: boolean; title: string; items: AnalyzedItem[] };
-
 const round1 = (n: number) => Math.round(n * 10) / 10;
 const mid = (a: number, b: number) => (Math.min(a, b) + Math.max(a, b)) / 2;
 
-function toResult(raw: z.infer<typeof RawResult>): AnalyzeResult {
+function toResult(raw: z.infer<typeof RawResult>): AnalyzeResponse {
   return {
     isFood: raw.is_food && raw.items.length > 0,
     title: raw.title,
-    items: raw.items.map((it) => ({
+    items: raw.items.map((it): AnalyzedItem => ({
       name: it.name,
       grams: Math.round(mid(it.grams_min, it.grams_max)),
       kcalPer100: round1(mid(it.kcal_per100_min, it.kcal_per100_max)),
@@ -150,13 +138,14 @@ function toResult(raw: z.infer<typeof RawResult>): AnalyzeResult {
   };
 }
 
-async function callOnce(input: AnalyzeInput, apiKey: string, model: string): Promise<AnalyzeResult> {
+async function callOnce(input: AnalyzeInput, apiKey: string, model: string, timeoutMs: number): Promise<AnalyzeResponse> {
   const parts: object[] = [{ text: buildPrompt(input) }];
   if (input.imageBase64) {
     parts.push({ inlineData: { mimeType: 'image/jpeg', data: input.imageBase64 } });
   }
   const res = await fetch(`${API_BASE}/${model}:generateContent`, {
     method: 'POST',
+    signal: AbortSignal.timeout(timeoutMs),
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({
       contents: [{ role: 'user', parts }],
@@ -180,11 +169,17 @@ async function callOnce(input: AnalyzeInput, apiKey: string, model: string): Pro
   return toResult(RawResult.parse(JSON.parse(text)));
 }
 
-export async function analyzeMeal(input: AnalyzeInput, apiKey: string, model: string): Promise<AnalyzeResult> {
+export type ModelConfig = { apiKey: string; model: string; fallbackModel: string; timeoutMs: number };
+
+/**
+ * The primary model is tried once with a timeout; on overload (503), timeout or
+ * an unparseable answer the faster fallback model gets one attempt.
+ */
+export async function analyzeMeal(input: AnalyzeInput, cfg: ModelConfig): Promise<AnalyzeResponse & { model: string }> {
   try {
-    return await callOnce(input, apiKey, model);
+    return { ...(await callOnce(input, cfg.apiKey, cfg.model, cfg.timeoutMs)), model: cfg.model };
   } catch (err) {
-    console.warn('analyze attempt 1 failed, retrying:', (err as Error).message);
-    return await callOnce(input, apiKey, model);
+    console.warn(`${cfg.model} failed, falling back to ${cfg.fallbackModel}:`, (err as Error).message.slice(0, 200));
+    return { ...(await callOnce(input, cfg.apiKey, cfg.fallbackModel, cfg.timeoutMs)), model: cfg.fallbackModel };
   }
 }

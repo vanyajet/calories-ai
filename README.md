@@ -2,36 +2,48 @@
 
 Календарь питания с подсчётом калорий и КБЖУ по фото, тексту или голосу. Требования: [REQUIREMENTS.md](REQUIREMENTS.md).
 
+Монорепа на npm workspaces:
+
 ```
-app/     — мобильное приложение (Expo SDK 57, React Native, expo-router, SQLite)
-server/  — прокси к Gemini (Node 24 + Hono), хранит API-ключ
+apps/mobile/       — мобильное приложение (Expo SDK 57, expo-router, SQLite)
+apps/server/       — прокси к Gemini (Node 24 + Hono), хранит API-ключ
+packages/shared/   — общий контракт API (типы запроса/ответа /analyze)
+```
+
+```bash
+npm install          # из корня, ставит зависимости всех пакетов
+npm run typecheck    # проверка типов во всех пакетах
+npm run server       # сервер в режиме разработки
+npm run mobile       # Metro для приложения
 ```
 
 ## Сервер
 
 ```bash
-cd server
-cp .env.example .env   # GEMINI_API_KEY, APP_SECRET (любая длинная строка)
-npm install
-npm run dev            # http://localhost:8787, проверка: GET /health
+cp apps/server/.env.example apps/server/.env   # GEMINI_API_KEY, APP_SECRET
+npm run server                                 # http://localhost:8787, GET /health
 ```
 
-Деплой — любой хостинг с Node 24 или Docker (`Dockerfile` в папке). Нужны переменные `GEMINI_API_KEY`, `APP_SECRET`, опционально `GEMINI_MODEL` (по умолчанию `gemini-3.8-flash`).
+Docker (контекст сборки — корень репозитория, т.к. нужен `packages/shared`):
 
-`POST /analyze` с заголовком `x-app-secret` и телом `{ image?: base64-jpeg, text?: string, lang: 'ru'|'en', hand?: {lengthCm, widthCm} }`.
+```bash
+cd apps/server
+docker compose up -d --build                    # http://IP:8787
+docker compose --profile https up -d --build    # + Caddy с HTTPS, нужен DOMAIN в .env
+```
+
+`POST /analyze`, заголовок `x-app-secret`, тело и ответ описаны в `packages/shared/src/index.ts`.
 Модель возвращает диапазоны веса и калорийности, сервер берёт середину.
 
 ## Приложение
 
 ```bash
-cd app
-cp .env.example .env   # EXPO_PUBLIC_PROXY_URL, EXPO_PUBLIC_APP_SECRET
-npm install
+cp apps/mobile/.env.example apps/mobile/.env   # EXPO_PUBLIC_PROXY_URL, EXPO_PUBLIC_APP_SECRET
 ```
 
 Распознавание речи — нативный модуль, поэтому **Expo Go не подойдёт**, нужна сборка.
 
-APK для Android (ставится по QR-коду из EAS):
+APK для Android (ставится по QR-коду из EAS), команды из `apps/mobile`:
 
 ```bash
 npx eas-cli@latest login
@@ -41,4 +53,4 @@ npx eas-cli@latest env:create --environment preview --name EXPO_PUBLIC_APP_SECRE
 npx eas-cli@latest build -p android --profile preview
 ```
 
-Пока сервер на http (локальная сеть) — в `app.json` включён `usesCleartextTraffic`; после деплоя на https его стоит убрать.
+Пока сервер на http — в `app.json` включён `usesCleartextTraffic`; после перехода на https его стоит убрать.

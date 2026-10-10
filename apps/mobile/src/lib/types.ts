@@ -1,8 +1,10 @@
+import type { Confidence, Lang } from '@calories/shared';
+
+export type { Confidence, Lang } from '@calories/shared';
+
 export type Sex = 'male' | 'female';
 export type Goal = 'maintain' | 'lose' | 'gain';
-export type Lang = 'ru' | 'en';
 export type ThemePref = 'system' | 'light' | 'dark';
-export type Confidence = 'high' | 'medium' | 'low';
 
 export type Profile = {
   sex: Sex;

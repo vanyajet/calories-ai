@@ -1,21 +1,11 @@
+import { SECRET_HEADER, type AnalyzeRequest, type AnalyzeResponse } from '@calories/shared';
 import { File } from 'expo-file-system';
 
-import type { Confidence, FoodItem, Lang, Profile } from './types';
+import type { FoodItem, Lang, Profile } from './types';
 import { normalizeItem } from './nutrition';
 
 const PROXY_URL = process.env.EXPO_PUBLIC_PROXY_URL ?? '';
 const APP_SECRET = process.env.EXPO_PUBLIC_APP_SECRET ?? '';
-
-type ServerItem = {
-  name: string;
-  grams: number;
-  kcalPer100: number;
-  proteinPer100: number;
-  fatPer100: number;
-  carbsPer100: number;
-  macrosEstimated: boolean;
-  confidence: Confidence;
-};
 
 export type AnalyzeResult = { isFood: boolean; title: string; items: FoodItem[] };
 
@@ -42,15 +32,15 @@ export async function analyzeMeal(args: {
   try {
     res = await fetch(`${PROXY_URL.replace(/\/$/, '')}/analyze`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-app-secret': APP_SECRET },
-      body: JSON.stringify({ image, text: args.text?.trim() || undefined, lang: args.lang, hand }),
+      headers: { 'Content-Type': 'application/json', [SECRET_HEADER]: APP_SECRET },
+      body: JSON.stringify({ image, text: args.text?.trim() || undefined, lang: args.lang, hand } satisfies AnalyzeRequest),
     });
   } catch {
     throw new AiError('network');
   }
   if (!res.ok) throw new AiError('server');
 
-  const data = (await res.json()) as { isFood: boolean; title: string; items: ServerItem[] };
+  const data = (await res.json()) as AnalyzeResponse;
   if (!data.isFood || data.items.length === 0) throw new AiError('not_food');
 
   return {
